@@ -45,14 +45,38 @@ tibble(urn_red = seq(100, 700, by = 100)) %>%
 **Prompt:** As in the book, we will be calculating our posterior distribution of the number of red beads in the urn. Assume that we know that there are 1,000 beads in the urn, all either red, blue or yellow. Create an unnormalized joint distribution of the set of models we are considering and the possible results of our experiment. In this example, we are using a paddle of size 25. (You may want to review the meaning of an unnormalized joint distribution from Chapter 5.) Plot that distribution. It should look very similar to the first plot in Section 6.6.1.
 
 Interpret the meaning of the graphic.
+```{r sc1}
+tibble(urn_red = seq(0, 1000, by = 1)) %>% 
+  mutate(paddle_red = map(urn_red, ~ rbinom(n = 100, size = 25, prob = ./1000))) %>% 
+  unnest(paddle_red) %>% 
+  ggplot(aes(x = paddle_red, y = urn_red)) + 
+  geom_point(alpha = 0.7) +
+  labs(title = 'Joint Distribution of Red Beads in Paddle and Urn',
+       x = 'Number of Red Beads in Paddle',
+       y = 'Number of Red Beans in Urn') + 
+  theme_classic()
 
-
+# For each number of beads in the paddle, we get a range of possible number of 
+# red beads in the urn.
+```
 
 
 ## Scene 2
 
 **Prompt:** Using the joint distribution we calculated in Scene 1 as input, calculate your posterior probability density for the number of red beads in the urn, given that that 10 red were sampled in our paddle of 25.
 
+```{r sc2}
+tibble(urn_red = seq(0, 1000, by = 10)) %>% 
+  mutate(paddle_red = map(urn_red, ~ rbinom(n = 100, size = 25, prob = ./1000))) %>% 
+  unnest(paddle_red) %>% 
+  filter(paddle_red == 10) %>%
+  ggplot(aes(x = urn_red)) + 
+  geom_density() + 
+  labs(title = 'Posterior Probability Density for Number of Red Beans in Urn
+       Given 10 Red Beads were Sampled in a Paddle of Size 25',
+       x = 'Number of Red Beads in Urn',
+       y = 'Density')
+```
 
 
 
