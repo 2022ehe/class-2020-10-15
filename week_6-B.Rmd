@@ -46,11 +46,12 @@ tibble(urn_red = seq(100, 700, by = 100)) %>%
 
 Interpret the meaning of the graphic.
 ```{r sc1}
-tibble(urn_red = seq(0, 1000, by = 1)) %>% 
+x <- tibble(urn_red = seq(0, 1000, by = 1)) %>% 
   mutate(paddle_red = map(urn_red, ~ rbinom(n = 100, size = 25, prob = ./1000))) %>% 
-  unnest(paddle_red) %>% 
-  ggplot(aes(x = paddle_red, y = urn_red)) + 
-  geom_point(alpha = 0.7) +
+  unnest(paddle_red)
+
+ggplot(x, aes(x = paddle_red, y = urn_red)) + 
+  geom_point(alpha = 0.01) +
   labs(title = 'Joint Distribution of Red Beads in Paddle and Urn',
        x = 'Number of Red Beads in Paddle',
        y = 'Number of Red Beans in Urn') + 
@@ -66,23 +67,48 @@ tibble(urn_red = seq(0, 1000, by = 1)) %>%
 **Prompt:** Using the joint distribution we calculated in Scene 1 as input, calculate your posterior probability density for the number of red beads in the urn, given that that 10 red were sampled in our paddle of 25.
 
 ```{r sc2}
-tibble(urn_red = seq(0, 1000, by = 10)) %>% 
-  mutate(paddle_red = map(urn_red, ~ rbinom(n = 100, size = 25, prob = ./1000))) %>% 
-  unnest(paddle_red) %>% 
+post <- x %>%
   filter(paddle_red == 10) %>%
-  ggplot(aes(x = urn_red)) + 
-  geom_density() + 
+  group_by(urn_red) %>%
+  summarize(total = n(), .groups = 'drop') %>%
+  mutate(probs = total/sum(total)) %>%
+  select(-total)
+  
+ggplot(post, aes(x = urn_red, y = probs)) + 
+  geom_col() + 
   labs(title = 'Posterior Probability Density for Number of Red Beans in Urn
        Given 10 Red Beads were Sampled in a Paddle of Size 25',
        x = 'Number of Red Beads in Urn',
        y = 'Density')
 ```
 
-
-
 ## Scene 3
 
 **Prompt:** With our posterior probability distribution, we can now forecast outcomes which we have not yet seen. For example, what is the probability of getting more than 3 reds if we sample 20 from the urn, given our posterior? (That is, we are pretending that we don't know the number of red beads in the urn.)
+
+```{r sc3}
+a <- tibble(urn_red = seq(0, 1000, by = 10)) %>% 
+  mutate(paddle_red = map(urn_red, ~ rbinom(n = 100, size = 20, prob = ./1000))) %>% 
+  unnest(paddle_red) %>%
+  filter(paddle_red == 10)
+  
+b <- a %>%
+  filter(paddle_red > 3)
+
+tibble(total = nrow(a), greater_3 = nrow(b), chance = greater_3/total)
+  #mutate(greater_3 = paddle_red > 3) %>%
+  #mutate(prob = sum(greater_3 == TRUE) / nrow(urn_red))
+  #summarize(prob = sum(greater_3 == TRUE)/nrow(urn_red))
+
+```
+```{r sc3}
+post %>%
+  mutate(new_reds = map(urn_red, ~ rbinom(n = 100, size = 25, prob = ./1000))) %>%
+  unnest(new_reds) %>%
+  mutate(res = ifelse(new_reds > 3, 1, 0)) %>%
+  mutate(weighted_res = probs * res) %>%
+  summarize(final = sum(weighted_res)/sum(probs))
+```
 
 
 
